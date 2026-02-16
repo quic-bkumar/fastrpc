@@ -77,7 +77,7 @@ int apps_mem_init(int domain) {
     ALLOC_AND_ADD_NEW_NODE_TO_TABLE(apps_mem_info, domain, me);
   }
   QList_Ctor(&me->mem_list);
-  pthread_mutex_init(&me->mem_mut, 0);
+  pthread_mutex_init(&me->mem_mut, NULL);
   me->init = 1;
 bail:
 	return nErr;
@@ -116,9 +116,9 @@ __QAIC_IMPL_EXPORT int
 __QAIC_IMPL(apps_mem_request_map64)(int heapid, uint32_t lflags, uint32_t rflags,
                                     uint64_t vin, int64_t len, uint64_t *vapps,
                                     uint64_t *vadsp) __QAIC_IMPL_ATTRIBUTE {
-  struct mem_info *minfo = 0;
-  int nErr = 0, unsigned_module = 0, ualloc_support = 0;
-  void *buf = 0;
+  struct mem_info *minfo = NULL;
+  int nErr, unsigned_module, ualloc_support;
+  void *buf = NULL;
   uint64_t pbuf;
   int fd = -1;
   int domain = get_current_domain();
@@ -137,7 +137,7 @@ __QAIC_IMPL(apps_mem_request_map64)(int heapid, uint32_t lflags, uint32_t rflags
   }
   (void)vin;
   VERIFYC(len >= 0, AEE_EBADPARM);
-  VERIFYC(NULL != (minfo = malloc(sizeof(*minfo))), AEE_ENOMEMORY);
+  VERIFYC(NULL != (minfo = calloc(1, sizeof(*minfo))), AEE_ENOMEMORY);
   QNode_CtorZ(&minfo->qn);
   *vadsp = 0;
   if (rflags == ADSP_MMAP_HEAP_ADDR || rflags == ADSP_MMAP_REMOTE_HEAP_ADDR) {
@@ -217,7 +217,7 @@ __QAIC_IMPL(apps_mem_request_map)(int heapid, uint32_t lflags, uint32_t rflags,
                                   uint32_t *vadsp) __QAIC_IMPL_ATTRIBUTE {
   uint64_t vin1, vapps1, vadsp1;
   int64_t len1;
-  int nErr = AEE_SUCCESS;
+  int nErr;
   vin1 = (uint64_t)vin;
   len1 = (int64_t)len;
   nErr = apps_mem_request_map64(heapid, lflags, rflags, vin1, len1, &vapps1,
@@ -304,7 +304,7 @@ __QAIC_IMPL_EXPORT int
 __QAIC_IMPL(apps_mem_share_map)(int fd, int size, uint64_t *vapps,
                                 uint64_t *vadsp) __QAIC_IMPL_ATTRIBUTE {
   struct mem_info *minfo = 0;
-  int nErr = AEE_SUCCESS;
+  int nErr;
   void *buf = 0;
   uint64_t pbuf;
   int domain = get_current_domain();
@@ -313,7 +313,7 @@ __QAIC_IMPL(apps_mem_share_map)(int fd, int size, uint64_t *vapps,
   GET_HASH_NODE(apps_mem_info, domain, me);
   VERIFYC(me, AEE_ERESOURCENOTFOUND);
   VERIFYC(fd > 0, AEE_EBADPARM);
-  VERIFYC(0 != (minfo = malloc(sizeof(*minfo))), AEE_ENOMEMORY);
+  VERIFYC(0 != (minfo = calloc(1, sizeof(*minfo))), AEE_ENOMEMORY);
   QNode_CtorZ(&minfo->qn);
   *vadsp = 0;
   VERIFYC(MAP_FAILED != (buf = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE,
