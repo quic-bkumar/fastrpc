@@ -52,6 +52,7 @@ static void get_dsp_lib_path(const char *machine_name, const char *filepath, cha
   int done = 0;
   int in_machines = 0;
   int in_target_machine = 0;
+  int machine_found = 0;
   int found_dsp_path = 0;
   char current_machine[PATH_MAX] = {0};
 
@@ -84,6 +85,7 @@ static void get_dsp_lib_path(const char *machine_name, const char *filepath, cha
           strlcpy(current_machine, value, sizeof(current_machine));
           if (strcmp(current_machine, machine_name) == 0) {
             in_target_machine = 1;
+            machine_found = 1;
           }
         } else if (in_target_machine && strcmp(value, DSP_LIB_KEY) == 0) {
           // Next scalar will be the DSP_LIBRARY_PATH value
@@ -119,8 +121,8 @@ static void get_dsp_lib_path(const char *machine_name, const char *filepath, cha
   yaml_parser_delete(&parser);
   fclose(file);
 
-  if (!found_dsp_path) {
-    FARF(ALWAYS, "Warning: DSP_LIBRARY_PATH not found for machine [%s] in configuration file %s\n", 
+  if (machine_found && !found_dsp_path) {
+    FARF(ALWAYS, "Warning: DSP_LIBRARY_PATH not found for machine [%s] in configuration file %s\n",
          machine_name, filepath);
   }
 }
@@ -151,6 +153,11 @@ static void parse_config_dir(char *machine_name) {
     snprintf(filepath, sizeof(filepath), "%s%s", CONFIG_DIR, file_list[i]);
     get_dsp_lib_path(machine_name, filepath, dsp_lib_paths);
     free(file_list[i]);
+    if (dsp_lib_paths[0] != '\0') {
+      for (int j = i + 1; j < file_count; j++)
+        free(file_list[j]);
+      break;
+    }
   }
 
   if (dsp_lib_paths[0] != '\0') {
